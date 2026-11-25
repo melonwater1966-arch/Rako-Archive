@@ -1,0 +1,48 @@
+
+name: Build Rako Archive iOS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Unzip iOS project
+        run: |
+          unzip -q Rako-iOS.zip -d project
+          ls -la project
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        working-directory: project
+        run: npm ci
+
+      - name: Sync Capacitor
+        working-directory: project
+        run: npx cap sync ios
+
+      - name: Build iOS Simulator app
+        working-directory: project
+        run: |
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -sdk iphonesimulator \
+            -configuration Debug \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Upload build
+        uses: actions/upload-artifact@v4
+        with:
+          name: Rako-Archive-iOS
+          path: project/build/Build/Products/Debug-iphonesimulator/
